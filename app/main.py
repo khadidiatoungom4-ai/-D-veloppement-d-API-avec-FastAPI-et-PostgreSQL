@@ -1,5 +1,6 @@
 
 from fastapi import FastAPI
+from app.routers import clients
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -7,6 +8,9 @@ app = FastAPI(
     description="API REST pour gérer les clients, les mesures, les commandes, les paiements et les livraisons d'un atelier de couture.",
     version="1.0.0"
 )
+
+app.include_router(clients.router)
+
 
 
 # Route d'accueil
@@ -23,3 +27,4 @@ def health():
     return {
         "status": "ok"
     }
+
