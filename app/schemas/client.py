@@ -1,8 +1,8 @@
-
 from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
-from typing import Literal
 
 class ClientCreate(BaseModel):
     nom: str = Field(min_length=1, max_length=100)
@@ -37,3 +37,10 @@ class ClientRead(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class ClientListResponse(BaseModel):
+    items: list[ClientRead]
+    total: int
+    limit: int
+    offset: int
