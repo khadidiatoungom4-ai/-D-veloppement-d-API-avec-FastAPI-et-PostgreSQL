@@ -158,3 +158,9 @@ def modifier_client(
     db.refresh(client)
 
     return client
+
+def supprimer_client(db: Session, client_id: int) -> None:
+    client = obtenir_client(db, client_id)
+
+    db.delete(client)
+    db.commit()
