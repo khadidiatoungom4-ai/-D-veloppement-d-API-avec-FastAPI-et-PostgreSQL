@@ -8,7 +8,12 @@ from app.models.mesure import Mesure
 from app.models.commande import Commande
 from app.models.ligne_commande import LigneCommande
 from app.models.type_vetement import TypeVetement
-from app.schemas.commande import CommandeCreate, CommandeUpdate
+from app.schemas.commande import (
+    CommandeCreate,
+    CommandeUpdate,
+)
+from app.schemas.ligne_commande import LigneCommandeCreate
+
 from app.models.historique_statut import HistoriqueStatut
 def creer_commande(
     db: Session,
@@ -247,33 +252,25 @@ def modifier_commande(
     commande_id: int,
     donnees: CommandeUpdate,
 ):
-    commande = db.get(Commande, commande_id)
+    commande = obtenir_commande_par_id(db, commande_id)
 
-    if commande is None:
+    if commande.statut in ["livree", "annulee"]:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Commande introuvable.",
-        )
-
-    if commande.statut != "en_attente":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Seules les commandes en attente peuvent être modifiées.",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Une commande livrée ou annulée ne peut plus être modifiée.",
         )
 
     modifications = donnees.model_dump(exclude_unset=True)
 
-    # 1. Vérifier que la mesure appartient au client
     if "mesure_id" in modifications and modifications["mesure_id"] is not None:
         mesure = db.get(Mesure, modifications["mesure_id"])
 
         if mesure is None or mesure.client_id != commande.client_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Cette mesure n'appartient pas au client de la commande.",
             )
 
-    # 2. Vérifier la date de livraison prévue
     nouvelle_date = modifications.get(
         "date_livraison_prevue",
         commande.date_livraison_prevue,
@@ -281,74 +278,149 @@ def modifier_commande(
 
     if nouvelle_date is not None and nouvelle_date < commande.date_commande:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="La date de livraison ne peut pas précéder la date de commande.",
         )
 
-    # 3. Préparer les lignes de commande
-    nouvelles_lignes = None
-
-    if "lignes" in modifications:
-        nouvelles_lignes = []
-
-        for ligne in modifications["lignes"]:
-            type_vetement = db.get(
-                TypeVetement,
-                ligne["type_vetement_id"],
-            )
-
-            if type_vetement is None or not type_vetement.actif:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Type de vêtement introuvable ou inactif.",
-                )
-
-            prix = ligne["prix_unitaire"]
-
-            if prix is None:
-                prix = type_vetement.prix_base
-
-            nouvelles_lignes.append(
-                LigneCommande(
-                    type_vetement_id=type_vetement.id,
-                    description=ligne["description"],
-                    quantite=ligne["quantite"],
-                    prix_unitaire=prix,
-                )
-            )
-
-    # 4. Calculer le montant brut
-    if nouvelles_lignes is not None:
-        montant_brut = sum(
-            ligne.quantite * ligne.prix_unitaire
-            for ligne in nouvelles_lignes
-        )
-    else:
-        montant_brut = sum(
-            ligne.quantite * ligne.prix_unitaire
-            for ligne in commande.lignes
-        )
-
-    # 5. Vérifier la remise
     nouvelle_remise = modifications.get("remise", commande.remise)
+
+    montant_brut = sum(
+        ligne.quantite * ligne.prix_unitaire
+        for ligne in commande.lignes
+    )
 
     if nouvelle_remise > montant_brut:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La remise ne peut pas dépasser le montant brut.",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="La remise ne peut pas dépasser le montant des prestations.",
         )
 
-    # 6. Appliquer les modifications
+    nouveau_total = montant_brut - nouvelle_remise
+
+    if nouveau_total < commande.montant_paye:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le nouveau montant ne peut pas être inférieur au montant déjà payé.",
+        )
+
     for champ, valeur in modifications.items():
-        if champ != "lignes":
-            setattr(commande, champ, valeur)
+        setattr(commande, champ, valeur)
 
-    # 7. Remplacer les lignes si elles ont été fournies
-    if nouvelles_lignes is not None:
-        commande.lignes = nouvelles_lignes
+    commande.montant_total = nouveau_total
 
-    # 8. Recalculer le montant total
-    commande.montant_total = montant_brut - nouvelle_remise
+    db.commit()
+    db.refresh(commande)
+
+    return commande
+
+def ajouter_ligne_commande(
+    db: Session,
+    commande_id: int,
+    donnees: LigneCommandeCreate,
+):
+    commande = obtenir_commande_par_id(db, commande_id)
+
+    if commande.statut != "en_attente":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Les lignes ne peuvent être modifiées que lorsque la commande est en attente.",
+        )
+
+    type_vetement = db.get(
+        TypeVetement,
+        donnees.type_vetement_id,
+    )
+
+    if type_vetement is None or not type_vetement.actif:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Type de vêtement introuvable ou inactif.",
+        )
+
+    prix = donnees.prix_unitaire
+
+    if prix is None:
+        prix = type_vetement.prix_base
+
+    nouvelle_ligne = LigneCommande(
+        commande_id=commande.id,
+        type_vetement_id=type_vetement.id,
+        description=donnees.description,
+        quantite=donnees.quantite,
+        prix_unitaire=prix,
+    )
+
+    nouveau_montant_brut = (
+        commande.montant_total
+        + commande.remise
+        + (donnees.quantite * prix)
+    )
+
+    nouveau_total = nouveau_montant_brut - commande.remise
+
+    if nouveau_total < commande.montant_paye:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le nouveau montant ne peut pas être inférieur au montant déjà payé.",
+        )
+
+    db.add(nouvelle_ligne)
+    commande.montant_total = nouveau_total
+
+    db.commit()
+    db.refresh(commande)
+
+    return commande
+def supprimer_ligne_commande(
+    db: Session,
+    commande_id: int,
+    ligne_id: int,
+):
+    commande = obtenir_commande_par_id(db, commande_id)
+
+    if commande.statut != "en_attente":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Les lignes ne peuvent être modifiées que lorsque la commande est en attente.",
+        )
+
+    ligne = (
+        db.query(LigneCommande)
+        .filter(
+            LigneCommande.id == ligne_id,
+            LigneCommande.commande_id == commande_id,
+        )
+        .first()
+    )
+
+    if ligne is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ligne de commande introuvable.",
+        )
+
+    if len(commande.lignes) <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Une commande doit conserver au moins une ligne.",
+        )
+
+    montant_brut = sum(
+        element.quantite * element.prix_unitaire
+        for element in commande.lignes
+        if element.id != ligne_id
+    )
+
+    nouveau_total = montant_brut - commande.remise
+
+    if nouveau_total < commande.montant_paye:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La suppression ferait passer le montant total sous le montant déjà payé.",
+        )
+
+    db.delete(ligne)
+    commande.montant_total = nouveau_total
 
     db.commit()
     db.refresh(commande)
