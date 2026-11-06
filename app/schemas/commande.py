@@ -8,7 +8,7 @@ from app.schemas.ligne_commande import (
     LigneCommandeRead,
 )
 
-
+from app.schemas.historique_statut import HistoriqueStatutRead
 class CommandeCreate(BaseModel):
     client_id: int
     mesure_id: int | None = None
@@ -42,3 +42,4 @@ class CommandeRead(BaseModel):
     notes: str | None
     cree_par_id: int
     lignes: list[LigneCommandeRead]
+    historiques_statuts: list[HistoriqueStatutRead] = []
