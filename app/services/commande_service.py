@@ -11,6 +11,7 @@ from app.models.type_vetement import TypeVetement
 from app.schemas.commande import (
     CommandeCreate,
     CommandeUpdate,
+    CommandeStatutUpdate,
 )
 from app.schemas.ligne_commande import LigneCommandeCreate
 
@@ -426,3 +427,89 @@ def supprimer_ligne_commande(
     db.refresh(commande)
 
     return commande
+def changer_statut_commande(
+    db: Session,
+    commande_id: int,
+    donnees: CommandeStatutUpdate,
+    utilisateur_id: int,
+    role: str,
+):
+    commande = obtenir_commande_par_id(db, commande_id)
+
+    transitions_autorisees = {
+        "en_attente": ["en_coupe", "annulee"],
+        "en_coupe": ["en_couture", "annulee"],
+        "en_couture": ["essayage", "terminee", "annulee"],
+        "essayage": ["retouches", "terminee", "annulee"],
+        "retouches": ["essayage", "terminee", "annulee"],
+        "terminee": [],
+        "livree": [],
+        "annulee": [],
+    }
+
+    ancien_statut = commande.statut
+    nouveau_statut = donnees.statut
+
+    if nouveau_statut == ancien_statut:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La commande possède déjà ce statut.",
+        )
+
+    if nouveau_statut == "livree":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Une commande ne peut être livrée que par la confirmation de livraison.",
+        )
+
+    statuts_possibles = transitions_autorisees.get(ancien_statut, [])
+
+    if nouveau_statut not in statuts_possibles:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Transition de statut non autorisée.",
+        )
+
+    if role == "tailleur" and nouveau_statut == "annulee":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Un tailleur ne peut pas annuler une commande.",
+        )
+
+    if nouveau_statut == "annulee" and commande.montant_paye > 0:
+        if not donnees.commentaire or not donnees.commentaire.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Un commentaire expliquant le remboursement ou l'avoir est obligatoire.",
+            )
+
+    commande.statut = nouveau_statut
+
+    historique = HistoriqueStatut(
+        commande_id=commande.id,
+        ancien_statut=ancien_statut,
+        nouveau_statut=nouveau_statut,
+        commentaire=donnees.commentaire,
+        utilisateur_id=utilisateur_id,
+    )
+
+    db.add(historique)
+    db.commit()
+    db.refresh(commande)
+
+    return commande
+def obtenir_historique_statuts(
+    db: Session,
+    commande_id: int,
+):
+    commande = obtenir_commande_par_id(db, commande_id)
+
+    return (
+        db.query(HistoriqueStatut)
+        .filter(HistoriqueStatut.commande_id == commande.id)
+        .order_by(
+            HistoriqueStatut.date_changement.asc(),
+            HistoriqueStatut.id.asc(),
+        )
+        .all()
+    )
