@@ -23,7 +23,10 @@ class CommandeUpdate(BaseModel):
     date_livraison_prevue: date | None = None
     remise: int | None = Field(default=None, ge=0)
     notes: str | None = None
-
+    lignes: list[LigneCommandeCreate] | None = Field(
+        default=None,
+        min_length=1,
+    )
 
 class CommandeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

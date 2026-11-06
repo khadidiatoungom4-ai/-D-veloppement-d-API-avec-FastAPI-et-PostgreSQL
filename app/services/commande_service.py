@@ -232,3 +232,125 @@ def lister_commandes(
         "limit": limit,
         "offset": offset,
     }
+def obtenir_commande_par_id(db: Session, commande_id: int):
+    commande = db.get(Commande, commande_id)
+
+    if commande is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Commande introuvable.",
+        )
+
+    return commande
+def modifier_commande(
+    db: Session,
+    commande_id: int,
+    donnees: CommandeUpdate,
+):
+    commande = db.get(Commande, commande_id)
+
+    if commande is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Commande introuvable.",
+        )
+
+    if commande.statut != "en_attente":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Seules les commandes en attente peuvent être modifiées.",
+        )
+
+    modifications = donnees.model_dump(exclude_unset=True)
+
+    # 1. Vérifier que la mesure appartient au client
+    if "mesure_id" in modifications and modifications["mesure_id"] is not None:
+        mesure = db.get(Mesure, modifications["mesure_id"])
+
+        if mesure is None or mesure.client_id != commande.client_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cette mesure n'appartient pas au client de la commande.",
+            )
+
+    # 2. Vérifier la date de livraison prévue
+    nouvelle_date = modifications.get(
+        "date_livraison_prevue",
+        commande.date_livraison_prevue,
+    )
+
+    if nouvelle_date is not None and nouvelle_date < commande.date_commande:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La date de livraison ne peut pas précéder la date de commande.",
+        )
+
+    # 3. Préparer les lignes de commande
+    nouvelles_lignes = None
+
+    if "lignes" in modifications:
+        nouvelles_lignes = []
+
+        for ligne in modifications["lignes"]:
+            type_vetement = db.get(
+                TypeVetement,
+                ligne["type_vetement_id"],
+            )
+
+            if type_vetement is None or not type_vetement.actif:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Type de vêtement introuvable ou inactif.",
+                )
+
+            prix = ligne["prix_unitaire"]
+
+            if prix is None:
+                prix = type_vetement.prix_base
+
+            nouvelles_lignes.append(
+                LigneCommande(
+                    type_vetement_id=type_vetement.id,
+                    description=ligne["description"],
+                    quantite=ligne["quantite"],
+                    prix_unitaire=prix,
+                )
+            )
+
+    # 4. Calculer le montant brut
+    if nouvelles_lignes is not None:
+        montant_brut = sum(
+            ligne.quantite * ligne.prix_unitaire
+            for ligne in nouvelles_lignes
+        )
+    else:
+        montant_brut = sum(
+            ligne.quantite * ligne.prix_unitaire
+            for ligne in commande.lignes
+        )
+
+    # 5. Vérifier la remise
+    nouvelle_remise = modifications.get("remise", commande.remise)
+
+    if nouvelle_remise > montant_brut:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La remise ne peut pas dépasser le montant brut.",
+        )
+
+    # 6. Appliquer les modifications
+    for champ, valeur in modifications.items():
+        if champ != "lignes":
+            setattr(commande, champ, valeur)
+
+    # 7. Remplacer les lignes si elles ont été fournies
+    if nouvelles_lignes is not None:
+        commande.lignes = nouvelles_lignes
+
+    # 8. Recalculer le montant total
+    commande.montant_total = montant_brut - nouvelle_remise
+
+    db.commit()
+    db.refresh(commande)
+
+    return commande

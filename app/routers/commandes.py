@@ -9,17 +9,25 @@ from app.schemas.commande import (
     CommandeCreate,
     CommandeRead,
     CommandeListResponse,
+    CommandeListResponse,
 )
 
 from app.services.commande_service import (
     creer_commande,
     lister_commandes,
+    obtenir_commande_par_id,
+    modifier_commande,
 )
-
 from app.core.dependencies import (
     obtenir_utilisateur_connecte,
     exiger_accueil_ou_admin,
 )
+from app.services.commande_service import (
+    creer_commande,
+    lister_commandes,
+    obtenir_commande_par_id,
+)
+
 
 router = APIRouter(
     prefix="/api/v1/commandes",
@@ -55,4 +63,32 @@ def obtenir_les_commandes(
         limit=limit,
         offset=offset,
         statut=statut,
+    )
+@router.get(
+    "/{commande_id}",
+    response_model=CommandeRead,
+)
+def obtenir_une_commande(
+    commande_id: int,
+    db: Session = Depends(get_db),
+    utilisateur: Utilisateur = Depends(obtenir_utilisateur_connecte),
+):
+    return obtenir_commande_par_id(
+        db=db,
+        commande_id=commande_id,
+    )
+@router.patch(
+    "/{commande_id}",
+    response_model=CommandeRead,
+)
+def modifier_une_commande(
+    commande_id: int,
+    donnees: CommandeUpdate,
+    db: Session = Depends(get_db),
+    utilisateur: Utilisateur = Depends(exiger_accueil_ou_admin),
+):
+    return modifier_commande(
+        db=db,
+        commande_id=commande_id,
+        donnees=donnees,
     )
