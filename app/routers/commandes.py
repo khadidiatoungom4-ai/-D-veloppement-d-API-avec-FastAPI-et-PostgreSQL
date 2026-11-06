@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
@@ -53,19 +54,29 @@ utilisateur: Utilisateur = Depends(exiger_accueil_ou_admin),):
     "",
     response_model=CommandeListResponse,
 )
-def obtenir_les_commandes(
+def lister_les_commandes(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    statut: str | None = Query(default=None),
+    statut: str | None = None,
+    client_id: int | None = None,
+    en_retard: bool | None = None,
+    date_min: date | None = None,
+    date_max: date | None = None,
+    numero: str | None = None,
     db: Session = Depends(get_db),
     utilisateur: Utilisateur = Depends(obtenir_utilisateur_connecte),
 ):
     return lister_commandes(
-        db=db,
-        limit=limit,
-        offset=offset,
-        statut=statut,
-    )
+    db=db,
+    limit=limit,
+    offset=offset,
+    statut=statut,
+    client_id=client_id,
+    en_retard=en_retard,
+    date_min=date_min,
+    date_max=date_max,
+    numero=numero,
+)
 @router.get(
     "/{commande_id}",
     response_model=CommandeRead,

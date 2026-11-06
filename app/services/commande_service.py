@@ -190,11 +190,41 @@ def lister_commandes(
     limit: int = 20,
     offset: int = 0,
     statut: str | None = None,
+    client_id: int | None = None,
+    en_retard: bool | None = None,
+    date_min: date | None = None,
+    date_max: date | None = None,
+    numero: str | None = None,
 ):
     requete = db.query(Commande)
 
     if statut is not None:
         requete = requete.filter(Commande.statut == statut)
+
+    if client_id is not None:
+        requete = requete.filter(Commande.client_id == client_id)
+
+    if date_min is not None:
+        requete = requete.filter(Commande.date_commande >= date_min)
+
+    if date_max is not None:
+        requete = requete.filter(Commande.date_commande <= date_max)
+
+    if numero is not None:
+        requete = requete.filter(
+            Commande.numero.ilike(f"%{numero}%")
+        )
+
+    if en_retard is not None:
+        condition_retard = (
+            (Commande.date_livraison_prevue < date.today())
+            & (Commande.statut.notin_(["livree", "annulee"]))
+        )
+
+        if en_retard:
+            requete = requete.filter(condition_retard)
+        else:
+            requete = requete.filter(~condition_retard)
 
     total = requete.count()
 
