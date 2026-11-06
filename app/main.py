@@ -2,6 +2,8 @@
 from fastapi import FastAPI
 from app.routers import clients, auth, utilisateurs, catalogue
 from app.routers.mesures import router as mesures_router
+from app.routers import commandes
+
 # Création de l'application FastAPI
 app = FastAPI(
     title="API de gestion d'un atelier de couture",
@@ -14,7 +16,7 @@ app.include_router(auth.router)
 app.include_router(utilisateurs.router)
 app.include_router(catalogue.router)
 app.include_router(mesures_router, prefix="/api/v1")
-
+app.include_router(commandes.router)
 # Route d'accueil
 @app.get("/")
 def accueil():

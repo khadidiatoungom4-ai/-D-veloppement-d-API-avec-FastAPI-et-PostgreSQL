@@ -1,0 +1,58 @@
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.core.dependencies import obtenir_utilisateur_connecte
+from app.models.utilisateur import Utilisateur
+
+from app.schemas.commande import (
+    CommandeCreate,
+    CommandeRead,
+    CommandeListResponse,
+)
+
+from app.services.commande_service import (
+    creer_commande,
+    lister_commandes,
+)
+
+from app.core.dependencies import (
+    obtenir_utilisateur_connecte,
+    exiger_accueil_ou_admin,
+)
+
+router = APIRouter(
+    prefix="/api/v1/commandes",
+    tags=["Commandes"],
+)
+@router.post(
+    "",
+    response_model=CommandeRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def creer_une_commande(
+    donnees: CommandeCreate,
+    db: Session = Depends(get_db),
+utilisateur: Utilisateur = Depends(exiger_accueil_ou_admin),):
+    return creer_commande(
+        db=db,
+        donnees=donnees,
+        utilisateur_id=utilisateur.id,
+    )
+@router.get(
+    "",
+    response_model=CommandeListResponse,
+)
+def obtenir_les_commandes(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    statut: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    utilisateur: Utilisateur = Depends(obtenir_utilisateur_connecte),
+):
+    return lister_commandes(
+        db=db,
+        limit=limit,
+        offset=offset,
+        statut=statut,
+    )

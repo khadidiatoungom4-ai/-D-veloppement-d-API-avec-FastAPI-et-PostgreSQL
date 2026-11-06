@@ -73,3 +73,14 @@ def exiger_tailleur_ou_admin(
         )
 
     return utilisateur
+def exiger_accueil_ou_admin(
+    utilisateur: Utilisateur = Depends(obtenir_utilisateur_connecte)
+) -> Utilisateur:
+
+    if utilisateur.role not in ["accueil", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès réservé à l'accueil ou à l'administrateur."
+        )
+
+    return utilisateur

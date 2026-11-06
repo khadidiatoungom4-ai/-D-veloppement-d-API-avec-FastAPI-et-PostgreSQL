@@ -42,4 +42,16 @@ class CommandeRead(BaseModel):
     notes: str | None
     cree_par_id: int
     lignes: list[LigneCommandeRead]
-    historiques_statuts: list[HistoriqueStatutRead] = []
+historiques_statuts: list[HistoriqueStatutRead] = Field(default_factory=list)
+class CommandeListItem(BaseModel):
+    commande: CommandeRead
+    client_nom: str | None
+    solde: int
+    en_retard: bool
+
+
+class CommandeListResponse(BaseModel):
+    items: list[CommandeListItem]
+    total: int
+    limit: int
+    offset: int

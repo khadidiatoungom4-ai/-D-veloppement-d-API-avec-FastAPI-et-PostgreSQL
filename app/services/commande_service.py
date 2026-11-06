@@ -8,9 +8,8 @@ from app.models.mesure import Mesure
 from app.models.commande import Commande
 from app.models.ligne_commande import LigneCommande
 from app.models.type_vetement import TypeVetement
-
 from app.schemas.commande import CommandeCreate, CommandeUpdate
-
+from app.models.historique_statut import HistoriqueStatut
 def creer_commande(
     db: Session,
     donnees: CommandeCreate,
@@ -150,7 +149,6 @@ def creer_commande(
 
     db.add(commande)
     db.flush()
-
     # Créer les lignes de la commande
     for ligne in lignes_a_creer:
         nouvelle_ligne = LigneCommande(
@@ -163,8 +161,7 @@ def creer_commande(
 
         db.add(nouvelle_ligne)
 
-    # Enregistrer la commande et ses lignes
-        # Enregistrer le statut initial dans l'historique
+    # Enregistrer le statut initial dans l'historique
     historique = HistoriqueStatut(
         commande_id=commande.id,
         ancien_statut=None,
@@ -174,9 +171,64 @@ def creer_commande(
     )
 
     db.add(historique)
+    
+   
 
     # Enregistrer la commande, ses lignes et son historique
     db.commit()
     db.refresh(commande)
 
     return commande
+def lister_commandes(
+    db: Session,
+    limit: int = 20,
+    offset: int = 0,
+    statut: str | None = None,
+):
+    requete = db.query(Commande)
+
+    if statut is not None:
+        requete = requete.filter(Commande.statut == statut)
+
+    total = requete.count()
+
+    commandes = (
+        requete
+        .order_by(Commande.date_commande.desc(), Commande.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    resultats = []
+
+    for commande in commandes:
+        client = db.get(Client, commande.client_id)
+
+        nom_client = (
+            f"{client.prenom} {client.nom}"
+            if client
+            else None
+        )
+
+        solde = commande.montant_total - commande.montant_paye
+
+        en_retard = (
+            commande.date_livraison_prevue is not None
+            and commande.date_livraison_prevue < date.today()
+            and commande.statut not in ["livree", "annulee"]
+        )
+
+        resultats.append({
+            "commande": commande,
+            "client_nom": nom_client,
+            "solde": solde,
+            "en_retard": en_retard,
+        })
+
+    return {
+        "items": resultats,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
