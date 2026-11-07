@@ -18,3 +18,14 @@ class LigneCommandeRead(BaseModel):
     description: str | None
     quantite: int
     prix_unitaire: int
+class LigneCommandeDetailRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    commande_id: int
+    type_vetement_id: int
+    prestation_nom: str
+    description: str | None
+    quantite: int
+    prix_unitaire: int
+    sous_total: int

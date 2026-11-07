@@ -9,6 +9,10 @@ from app.schemas.ligne_commande import (
 )
 
 from app.schemas.historique_statut import HistoriqueStatutRead
+from app.schemas.ligne_commande import LigneCommandeDetailRead
+
+
+
 class CommandeCreate(BaseModel):
     client_id: int
     mesure_id: int | None = None
@@ -40,7 +44,7 @@ class CommandeRead(BaseModel):
     notes: str | None
     cree_par_id: int
     lignes: list[LigneCommandeRead]
-historiques_statuts: list[HistoriqueStatutRead] = Field(default_factory=list)
+    historiques_statuts: list[HistoriqueStatutRead] = Field(default_factory=list)
 class CommandeListItem(BaseModel):
     commande: CommandeRead
     client_nom: str | None
@@ -57,3 +61,24 @@ class CommandeListResponse(BaseModel):
 class CommandeStatutUpdate(BaseModel):
     statut: str
     commentaire: str | None = None
+class CommandeDetailRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    numero: str
+    client_id: int
+    mesure_id: int | None
+    statut: str
+    date_commande: date
+    date_livraison_prevue: date | None
+    date_livraison_reelle: date | None
+    remise: int
+    montant_total: int
+    montant_paye: int
+    solde: int
+    en_retard: bool
+    notes: str | None
+    cree_par_id: int
+    lignes: list[LigneCommandeDetailRead]
+    historiques_statuts: list[HistoriqueStatutRead] = Field(default_factory=list) 
+    

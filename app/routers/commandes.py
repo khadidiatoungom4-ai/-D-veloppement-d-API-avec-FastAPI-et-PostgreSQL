@@ -15,6 +15,7 @@ from app.schemas.commande import (
     CommandeCreate,
     CommandeUpdate,
     CommandeRead,
+    CommandeDetailRead,
     CommandeListResponse,
     CommandeStatutUpdate
      )
@@ -24,13 +25,10 @@ from app.schemas.ligne_commande import LigneCommandeCreate
 from app.services.commande_service import (
     creer_commande,
     lister_commandes,
-    obtenir_commande_par_id,
+    obtenir_commande_detail_par_id,
     modifier_commande,
-    ajouter_ligne_commande,
-    supprimer_ligne_commande,
-    changer_statut_commande,
-    obtenir_historique_statuts,
 )
+
 from app.schemas.historique_statut import HistoriqueStatutRead
 router = APIRouter(
     prefix="/api/v1/commandes",
@@ -77,19 +75,15 @@ def lister_les_commandes(
     date_max=date_max,
     numero=numero,
 )
-@router.get(
-    "/{commande_id}",
-    response_model=CommandeRead,
-)
+@router.get("/{commande_id}", response_model=CommandeDetailRead)
+
 def obtenir_une_commande(
     commande_id: int,
     db: Session = Depends(get_db),
     utilisateur: Utilisateur = Depends(obtenir_utilisateur_connecte),
 ):
-    return obtenir_commande_par_id(
-        db=db,
-        commande_id=commande_id,
-    )
+    return obtenir_commande_detail_par_id(db, commande_id)
+
 @router.patch(
     "/{commande_id}",
     response_model=CommandeRead,

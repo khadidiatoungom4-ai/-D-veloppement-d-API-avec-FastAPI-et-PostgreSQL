@@ -16,6 +16,7 @@ from app.schemas.commande import (
 from app.schemas.ligne_commande import LigneCommandeCreate
 
 from app.models.historique_statut import HistoriqueStatut
+
 def creer_commande(
     db: Session,
     donnees: CommandeCreate,
@@ -269,6 +270,11 @@ def lister_commandes(
         "offset": offset,
     }
 def obtenir_commande_par_id(db: Session, commande_id: int):
+    """
+    Récupérer une commande sous forme d'objet SQLAlchemy.
+    Cette fonction est utilisée par les opérations de modification,
+    de changement de statut, de gestion des lignes et d'historique.
+    """
     commande = db.get(Commande, commande_id)
 
     if commande is None:
@@ -278,6 +284,57 @@ def obtenir_commande_par_id(db: Session, commande_id: int):
         )
 
     return commande
+
+
+def obtenir_commande_detail_par_id(db: Session, commande_id: int):
+    """
+    Récupérer les informations détaillées d'une commande.
+    Cette fonction retourne un dictionnaire adapté au schéma
+    CommandeDetailRead utilisé par la route GET /{commande_id}.
+    """
+    commande = obtenir_commande_par_id(db, commande_id)
+
+    lignes_detaillees = []
+
+    for ligne in commande.lignes:
+        lignes_detaillees.append({
+            "id": ligne.id,
+            "commande_id": ligne.commande_id,
+            "type_vetement_id": ligne.type_vetement_id,
+            "prestation_nom": ligne.type_vetement.nom,
+            "description": ligne.description,
+            "quantite": ligne.quantite,
+            "prix_unitaire": ligne.prix_unitaire,
+            "sous_total": ligne.quantite * ligne.prix_unitaire,
+        })
+
+    solde = commande.montant_total - commande.montant_paye
+
+    en_retard = (
+        commande.date_livraison_prevue is not None
+        and commande.date_livraison_prevue < date.today()
+        and commande.statut not in ["livree", "annulee"]
+    )
+
+    return {
+        "id": commande.id,
+        "numero": commande.numero,
+        "client_id": commande.client_id,
+        "mesure_id": commande.mesure_id,
+        "statut": commande.statut,
+        "date_commande": commande.date_commande,
+        "date_livraison_prevue": commande.date_livraison_prevue,
+        "date_livraison_reelle": commande.date_livraison_reelle,
+        "remise": commande.remise,
+        "montant_total": commande.montant_total,
+        "montant_paye": commande.montant_paye,
+        "solde": solde,
+        "en_retard": en_retard,
+        "notes": commande.notes,
+        "cree_par_id": commande.cree_par_id,
+        "lignes": lignes_detaillees,
+        "historiques_statuts": commande.historiques_statuts,
+    }
 def modifier_commande(
     db: Session,
     commande_id: int,

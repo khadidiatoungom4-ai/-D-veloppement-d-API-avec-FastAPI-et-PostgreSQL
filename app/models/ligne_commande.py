@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+from app.models.type_vetement import TypeVetement
 
 class LigneCommande(Base):
     __tablename__ = "lignes_commande"
@@ -38,3 +39,4 @@ class LigneCommande(Base):
     commande: Mapped["Commande"] = relationship(
         back_populates="lignes"
     )
+    type_vetement: Mapped["TypeVetement"] = relationship()
