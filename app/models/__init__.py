@@ -11,3 +11,5 @@ from app.models.commande import Commande
 from app.models.ligne_commande import LigneCommande
 
 from app.models.historique_statut import HistoriqueStatut
+
+from app.models.paiement import Paiement

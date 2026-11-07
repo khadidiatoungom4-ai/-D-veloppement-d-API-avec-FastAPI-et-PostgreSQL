@@ -105,4 +105,8 @@ class Commande(Base):
     historiques_statuts: Mapped[list["HistoriqueStatut"]] = relationship(
     back_populates="commande",
     cascade="all, delete-orphan",
-)
+    )
+    paiements: Mapped[list["Paiement"]] = relationship(
+    back_populates="commande",
+    cascade="all, delete-orphan",
+    )
