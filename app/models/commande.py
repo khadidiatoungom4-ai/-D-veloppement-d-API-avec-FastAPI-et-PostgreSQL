@@ -11,7 +11,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
-
+from sqlalchemy.orm import relationship
 
 class Commande(Base):
     __tablename__ = "commandes"
@@ -110,3 +110,7 @@ class Commande(Base):
     back_populates="commande",
     cascade="all, delete-orphan",
     )
+    livraison: Mapped["Livraison | None"] = relationship(
+    back_populates="commande",
+    uselist=False,
+)
