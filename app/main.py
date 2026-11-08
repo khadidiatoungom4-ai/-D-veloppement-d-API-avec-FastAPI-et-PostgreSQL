@@ -1,5 +1,8 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from app.database import get_db
 from app.routers import clients, auth, utilisateurs, catalogue, paiements, livraisons
 from app.routers.mesures import router as mesures_router
 from app.routers import commandes
@@ -29,10 +32,17 @@ def accueil():
     }
 
 
-# Route de vérification de l'API
 @app.get("/health")
-def health():
-    return {
-        "status": "ok"
-    }
+def health(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
 
+        return {
+            "status": "ok"
+        }
+
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="La base de données est indisponible"
+        )
