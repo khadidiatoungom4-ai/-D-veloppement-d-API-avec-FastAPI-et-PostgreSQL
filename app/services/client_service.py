@@ -162,5 +162,11 @@ def modifier_client(
 def supprimer_client(db: Session, client_id: int) -> None:
     client = obtenir_client(db, client_id)
 
+    if client.commandes:
+        raise HTTPException(
+            status_code=409,
+            detail="Impossible de supprimer un client ayant des commandes."
+        )
+
     db.delete(client)
     db.commit()

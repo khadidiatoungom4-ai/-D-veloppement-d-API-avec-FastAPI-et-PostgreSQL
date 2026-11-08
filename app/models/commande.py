@@ -97,7 +97,9 @@ class Commande(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
-
+    client: Mapped["Client"] = relationship(
+        back_populates="commandes"
+    )
     lignes: Mapped[list["LigneCommande"]] = relationship(
         back_populates="commande",
         cascade="all, delete-orphan",
