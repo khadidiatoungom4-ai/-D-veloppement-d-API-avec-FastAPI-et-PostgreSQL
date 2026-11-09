@@ -1,0 +1,129 @@
+# RÈGLES MÉTIER ET GESTION DES RÔLES
+## Projet Atelier Couture API
+
+### 1. Gestion des utilisateurs
+
+L'application dispose de trois rôles :
+
+| Rôle | Responsabilités principales |
+|---|---|
+| Administrateur | Administration générale et accès aux statistiques |
+| Accueil | Gestion des clients, commandes, paiements et livraisons |
+| Tailleur | Prise et correction des mesures, suivi de la production |
+
+Les permissions sont contrôlées afin de limiter les opérations selon le rôle de l'utilisateur connecté.
+
+### 2. Gestion des clients
+
+Chaque client possède des informations d'identification et de contact.
+
+Règles principales :
+- Le numéro de téléphone doit être unique.
+- Les informations peuvent être consultées et modifiées selon les permissions.
+- Un client ayant des commandes ne peut pas être supprimé.
+- La suppression d'un client sans commande entraîne également la suppression de ses mesures.
+
+### 3. Gestion des mesures
+
+Les mesures sont associées à un client et à l'utilisateur qui les a prises.
+
+Règles principales :
+- Une mesure doit appartenir au client concerné.
+- Les mesures peuvent être conservées sous forme d'historique.
+- La dernière mesure peut être utilisée par défaut lors de la création d'une commande.
+- Une mesure utilisée par une commande ne peut pas être supprimée.
+
+### 4. Gestion du catalogue
+
+Le catalogue contient les prestations proposées par l'atelier.
+
+Chaque prestation possède notamment :
+- Un nom.
+- Une description.
+- Un prix de base.
+- Un délai de réalisation.
+- Un état d'activation.
+
+Une prestation inactive ne peut pas être utilisée pour créer une nouvelle commande.
+
+### 5. Gestion des commandes
+
+Chaque commande est associée à un client et peut contenir plusieurs lignes.
+
+Règles principales :
+- Chaque commande possède un numéro unique au format CMD-AAAA-NNNNN.
+- Une commande doit contenir au moins une ligne.
+- Le prix de base provient du catalogue lorsqu'aucun prix spécifique n'est fourni.
+- Le montant total est calculé côté serveur.
+- La remise ne peut pas dépasser le montant brut.
+- Le montant total ne peut pas être inférieur au montant déjà payé.
+- La date de livraison prévue ne peut pas précéder la date de commande.
+- Les lignes ne sont modifiables que lorsque la commande est en attente.
+
+### 6. Suivi de la production
+
+Le cycle de vie d'une commande suit les statuts suivants :
+
+1. En attente.
+2. En coupe.
+3. En couture.
+4. Essayage.
+5. Retouches.
+6. Terminée.
+7. Livrée.
+
+Une commande peut également être annulée lorsque les règles métier l'autorisent.
+
+Les transitions sont contrôlées :
+- Une commande livrée ou annulée est définitive.
+- Une commande ne peut pas être marquée directement comme livrée.
+- Le tailleur ne peut pas annuler une commande.
+- Une annulation après paiement nécessite un commentaire expliquant le remboursement ou l'avoir.
+- Chaque changement de statut est enregistré dans l'historique.
+
+### 7. Gestion des paiements
+
+L'application permet d'enregistrer plusieurs paiements pour une même commande.
+
+Les moyens de paiement autorisés sont :
+- Espèces.
+- Wave.
+- Orange Money.
+- Virement bancaire.
+- Chèque.
+
+Règles principales :
+- Le montant d'un paiement doit être strictement positif.
+- Un paiement ne peut pas dépasser le solde restant.
+- Un paiement ne peut pas être enregistré à une date future.
+- Une commande annulée ne peut plus recevoir de paiement.
+- L'annulation d'un paiement est réservée à l'administrateur.
+
+### 8. Gestion des livraisons
+
+Une commande peut être associée à une livraison.
+
+Règles principales :
+- Une commande ne possède qu'une seule fiche de livraison.
+- Une livraison à domicile nécessite une adresse.
+- La planification peut modifier la date de livraison prévue.
+- La confirmation de livraison nécessite une commande terminée.
+- Le solde doit être réglé avant la livraison, sauf autorisation explicite de livrer avec un solde impayé.
+- La confirmation actualise le statut et les dates de livraison.
+
+### 9. Gestion des statistiques
+
+L'application propose plusieurs indicateurs de suivi :
+- Tableau de bord.
+- Chiffre d'affaires.
+- Répartition des prestations.
+- Classement des meilleurs clients.
+- Liste des impayés.
+
+L'accès aux statistiques est réservé à l'administrateur.
+
+### 10. Conclusion
+
+Les règles métier permettent de garantir la cohérence des opérations réalisées dans l'application. Elles encadrent les interactions entre les clients, les commandes, les mesures, les paiements et les livraisons.
+
+La gestion des rôles contribue à sécuriser les opérations et à répartir les responsabilités entre les utilisateurs de l'atelier.

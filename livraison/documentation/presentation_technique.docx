@@ -1,0 +1,130 @@
+# PRÉSENTATION TECHNIQUE
+## Projet : Atelier Couture API
+
+### 1. Présentation générale
+
+Atelier Couture API est une application backend développée avec FastAPI. Elle a pour objectif de faciliter la gestion des activités quotidiennes d'un atelier de couture à travers une interface de programmation (API REST).
+
+L'application centralise les informations relatives aux clients, aux mesures, aux prestations, aux commandes, aux paiements et aux livraisons.
+
+### 2. Objectifs du projet
+
+Les principaux objectifs sont :
+
+- Centraliser les données de l'atelier.
+- Faciliter la gestion des clients et de leurs mesures.
+- Organiser les commandes et leur suivi.
+- Suivre les paiements et les soldes restant dus.
+- Planifier et gérer les livraisons.
+- Fournir des statistiques pour faciliter le suivi de l'activité.
+- Sécuriser l'accès aux fonctionnalités selon les rôles des utilisateurs.
+
+### 3. Technologies utilisées
+
+| Technologie | Utilisation |
+|---|---|
+| Python | Langage de programmation |
+| FastAPI | Développement de l'API REST |
+| PostgreSQL | Gestion de la base de données |
+| SQLAlchemy | Mapping objet-relationnel |
+| Alembic | Gestion des migrations |
+| Pydantic | Validation des données |
+| JWT | Authentification |
+| Argon2 | Hachage des mots de passe |
+| Docker | Conteneurisation |
+| Pytest | Tests automatisés |
+
+### 4. Architecture générale
+
+L'application repose sur une architecture organisée en plusieurs couches :
+
+- **Routers :** réception et traitement des requêtes HTTP.
+- **Schemas :** validation et structuration des données.
+- **Models :** représentation des tables de la base de données.
+- **Services :** application des règles métier.
+- **Database :** configuration et accès à PostgreSQL.
+- **Migrations :** évolution contrôlée de la structure de la base de données.
+
+### 5. Fonctionnalités principales
+
+#### 5.1 Authentification et utilisateurs
+- Connexion sécurisée.
+- Gestion des utilisateurs.
+- Authentification par jeton JWT.
+- Gestion des rôles et permissions.
+
+#### 5.2 Gestion des clients
+- Création et consultation des clients.
+- Modification des informations.
+- Recherche et pagination.
+- Protection contre la suppression d'un client ayant des commandes.
+
+#### 5.3 Gestion des mesures
+- Enregistrement des mesures.
+- Consultation de l'historique.
+- Consultation des dernières mesures.
+- Modification des mesures selon les permissions.
+
+#### 5.4 Gestion du catalogue
+- Consultation des prestations.
+- Ajout de prestations.
+- Modification des informations du catalogue.
+- Activation et désactivation des prestations.
+
+#### 5.5 Gestion des commandes
+- Création des commandes.
+- Ajout et suppression de lignes.
+- Calcul des montants et des remises.
+- Suivi des statuts.
+- Conservation de l'historique des changements.
+
+#### 5.6 Gestion des paiements
+- Enregistrement des paiements.
+- Suivi des montants payés.
+- Calcul des soldes.
+- Gestion de l'annulation des paiements selon les permissions.
+
+#### 5.7 Gestion des livraisons
+- Planification des livraisons.
+- Modification des informations de livraison.
+- Confirmation de la livraison.
+- Suivi des dates et des statuts.
+
+#### 5.8 Statistiques
+- Tableau de bord.
+- Chiffre d'affaires.
+- Répartition des prestations.
+- Meilleurs clients.
+- Suivi des impayés.
+
+### 6. Sécurité et gestion des accès
+
+L'application utilise une authentification JWT et un système de rôles :
+
+- **Administrateur :** administration générale de l'application.
+- **Accueil :** gestion des clients, commandes, paiements et livraisons selon les permissions définies.
+- **Tailleur :** gestion des mesures et suivi de la production selon les permissions définies.
+
+Les mots de passe sont hachés avec Argon2.
+
+### 7. Base de données
+
+PostgreSQL assure le stockage des données. SQLAlchemy permet de représenter les entités métier et leurs relations.
+
+Alembic est utilisé pour gérer les migrations de la base de données.
+
+### 8. Déploiement
+
+L'application est conteneurisée avec Docker et Docker Compose.
+
+Les deux principaux services sont :
+- Le service API basé sur FastAPI.
+- Le service de base de données PostgreSQL.
+
+La documentation interactive Swagger permet de consulter et d'utiliser les différents endpoints.
+
+### 9. Conclusion
+
+Atelier Couture API constitue une solution backend destinée à structurer et à faciliter la gestion d'un atelier de couture.
+
+L'application regroupe les principales opérations métier dans une API organisée, sécurisée et évolutive. Son architecture modulaire et sa conteneurisation facilitent sa maintenance et son déploiement.

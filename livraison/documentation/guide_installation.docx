@@ -1,0 +1,110 @@
+# GUIDE D'INSTALLATION ET DE LANCEMENT
+## Atelier Couture API
+
+### 1. Présentation
+
+Atelier Couture API est une application backend développée avec FastAPI et PostgreSQL. Elle est déployée à l'aide de Docker et Docker Compose.
+
+### 2. Prérequis
+
+Avant l'installation, il faut disposer de :
+
+- Python (pour une exécution locale).
+- Docker Desktop.
+- Docker Compose.
+- Git (pour récupérer le code source).
+- Un environnement Windows, Linux ou macOS.
+
+### 3. Récupération du projet
+
+Récupérer le dépôt GitHub du projet, puis ouvrir un terminal dans le dossier :
+
+```cmd
+cd atelier_couture_api
+```
+
+### 4. Configuration des variables d'environnement
+
+Créer le fichier `.env` à partir du modèle fourni :
+
+```cmd
+copy .env.example .env
+```
+
+Ouvrir le fichier `.env` et renseigner les variables nécessaires :
+
+- `DATABASE_URL`
+- `SECRET_KEY`
+- `ACCESS_TOKEN_EXPIRE_MINUTES`
+- `ADMIN_EMAIL`
+- `ADMIN_NOM_COMPLET`
+- `ADMIN_PASSWORD`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+
+Les mots de passe et clés secrètes doivent être remplacés par des valeurs sécurisées.
+
+### 5. Démarrage avec Docker
+
+Depuis la racine du projet, exécuter :
+
+```cmd
+docker compose up -d --build
+```
+
+Cette commande construit l'image de l'application et démarre les services API et PostgreSQL.
+
+Les migrations Alembic sont exécutées automatiquement au démarrage de l'API.
+
+### 6. Initialisation des données
+
+Après le premier démarrage, initialiser le compte administrateur et le catalogue :
+
+```cmd
+docker compose exec api python -m app.seed
+```
+
+Le script crée le compte administrateur et les prestations du catalogue à partir des variables d'environnement.
+
+### 7. Accès à l'application
+
+Une fois les services démarrés :
+
+- API : http://127.0.0.1:8000
+- Documentation Swagger : http://127.0.0.1:8000/docs
+- Vérification de santé : http://127.0.0.1:8000/health
+
+### 8. Vérification des conteneurs
+
+Pour consulter l'état des services :
+
+```cmd
+docker compose ps
+```
+
+Pour consulter les journaux de l'API :
+
+```cmd
+docker compose logs --tail 50 api
+```
+
+### 9. Arrêt de l'application
+
+Pour arrêter les conteneurs sans supprimer les données :
+
+```cmd
+docker compose down
+```
+
+Les données PostgreSQL sont conservées dans le volume Docker.
+
+### 10. Sécurité
+
+Le fichier `.env` contient des informations sensibles et ne doit pas être partagé ni ajouté au dépôt GitHub.
+
+Le fichier `.env.example` sert uniquement de modèle de configuration.
+
+### 11. Conclusion
+
+Docker Compose facilite le lancement de l'application et de sa base de données. Le script d'initialisation et les migrations Alembic permettent de préparer automatiquement l'environnement applicatif.

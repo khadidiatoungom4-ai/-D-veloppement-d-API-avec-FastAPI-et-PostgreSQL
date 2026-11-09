@@ -1,0 +1,50 @@
+# BILAN DU PROJET ET PERSPECTIVES
+
+## 1. Bilan général
+
+Le projet Atelier Couture consiste à développer une API de gestion destinée à faciliter l'organisation et le suivi des activités d'un atelier de couture.
+
+L'application permet de centraliser les informations relatives aux clients, aux mesures, aux commandes, aux prestations, aux paiements et aux livraisons.
+
+## 2. Réalisations
+
+Les principales fonctionnalités développées sont :
+
+- Gestion des utilisateurs et authentification sécurisée par JWT.
+- Gestion des clients et de leurs mesures.
+- Gestion du catalogue des prestations.
+- Création et suivi des commandes.
+- Gestion des lignes de commande et des tarifs.
+- Suivi des étapes de production.
+- Enregistrement et suivi des paiements.
+- Planification et confirmation des livraisons.
+- Consultation des statistiques de gestion.
+
+L'application repose sur FastAPI, PostgreSQL, SQLAlchemy et Alembic. Elle dispose également d'un environnement de déploiement avec Docker et Docker Compose.
+
+## 3. Difficultés rencontrées
+
+Le développement a nécessité la prise en compte de plusieurs contraintes techniques et fonctionnelles :
+
+- Organisation des relations entre les différentes tables.
+- Mise en place des règles de gestion des commandes.
+- Gestion des autorisations selon les rôles.
+- Sécurisation de l'authentification.
+- Gestion des migrations de la base de données.
+- Configuration de l'environnement Docker.
+
+## 4. Perspectives d'amélioration
+
+Plusieurs évolutions peuvent être envisagées :
+
+- Développer une interface utilisateur web.
+- Ajouter des notifications automatiques pour les échéances et les livraisons.
+- Générer des factures et des reçus au format PDF.
+- Intégrer des notifications SMS ou WhatsApp.
+- Enrichir le tableau de bord avec des indicateurs supplémentaires.
+- Mettre en place une sauvegarde automatisée de la base de données.
+- Déployer l'application sur un serveur accessible en ligne.
+
+## 5. Conclusion
+
+Le projet constitue une base technique pour la digitalisation de la gestion d'un atelier de couture. Il permet de structurer les principales opérations métier et offre des possibilités d'évolution vers une solution complète de gestion.
